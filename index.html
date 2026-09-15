@@ -20,7 +20,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
-    /* Presentationslager i botten */
+    /* Presentationslager */
     #presentation-container {
       position: absolute;
       top: 0;
@@ -37,14 +37,13 @@
       display: block;
     }
 
-    /* Klocka - fast position i övre vänstra hörnet */
+    /* Klocka i övre vänstra hörnet */
     #clock-overlay {
       position: fixed;
       top: 24px;
       left: 24px;
       z-index: 10;
       
-      /* Halvtransparent mörk bakgrund med suddning för maximal läsbarhet */
       background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
@@ -54,12 +53,10 @@
       border: 1px solid rgba(255, 255, 255, 0.15);
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
       
-      /* Gör elementet "osynligt" för musklick och markering */
       pointer-events: none;
       user-select: none;
     }
 
-    /* Klockans siffror */
     #clock-time {
       color: #ffffff;
       font-size: 2.2rem;
@@ -70,7 +67,6 @@
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
     }
 
-    /* Klockans datum */
     #clock-date {
       color: #d1d5db;
       font-size: 0.85rem;
@@ -82,54 +78,118 @@
 </head>
 <body>
 
-  <!-- Google Presentation i bakgrunden -->
+  <!-- Google Presentation -->
   <div id="presentation-container">
     <iframe 
       id="presentation-frame"
-      src="https://docs.google.com/presentation/d/e/2PACX-1vQdvm58L1ldwHdythef5TPKYRNPeGoVJYmxC7llHReMvCeVLJmqSaUtC2EF6hZX3Pk5rIuedMOpyuoc/pub?start=true&loop=true&delayms=5000&rm=minimal"
+      src="about:blank"
       allowfullscreen="true"
       mozallowfullscreen="true"
       webkitallowfullscreen="true">
     </iframe>
   </div>
 
-  <!-- Permanent digital klocka i övre vänstra hörnet -->
+  <!-- Digital klocka -->
   <div id="clock-overlay">
     <div id="clock-time">00:00</div>
     <div id="clock-date">Laddar...</div>
   </div>
 
   <script>
-    // 1. Uppdatera klocka och datum varje sekund
-    function updateClock() {
+    // --- Konfiguration ---
+    const PRESENTATION_URL = "https://docs.google.com/presentation/d/e/2PACX-1vQdvm58L1ldwHdythef5TPKYRNPeGoVJYmxC7llHReMvCeVLJmqSaUtC2EF6hZX3Pk5rIuedMOpyuoc/pub?start=true&loop=true&delayms=5000&rm=minimal";
+
+    const START_HOUR = 7;
+    const START_MINUTE = 30;
+    const END_HOUR = 17;
+    const END_MINUTE = 0;
+
+    // Endast aktiv måndag–fredag (helger är alltid avstängda)
+    const WEEKDAYS_ONLY = true;
+
+    // Släcker även klockan när skärmen är avstängd (blir helsvart)
+    const HIDE_CLOCK_WHEN_INACTIVE = true;
+
+    let isActiveState = null;
+
+    // --- 1. Klocka och schemastyrning ---
+    function updateDisplayAndSchedule() {
       const now = new Date();
       
+      // Uppdatera klockans siffror
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       document.getElementById('clock-time').textContent = `${hours}:${minutes}`;
 
       const options = { weekday: 'short', day: 'numeric', month: 'short' };
       document.getElementById('clock-date').textContent = now.toLocaleDateString('sv-SE', options);
+
+      // Beräkna klockslag
+      const currentMinuteOfDay = now.getHours() * 60 + now.getMinutes();
+      const startMinute = START_HOUR * 60 + START_MINUTE; // 07:30
+      const endMinute = END_HOUR * 60 + END_MINUTE;       // 17:00
+
+      let shouldBeActive = currentMinuteOfDay >= startMinute && currentMinuteOfDay < endMinute;
+
+      // Helgkontroll: 0 = Söndag, 6 = Lördag
+      if (WEEKDAYS_ONLY) {
+        const day = now.getDay();
+        if (day === 0 || day === 6) {
+          shouldBeActive = false;
+        }
+      }
+
+      // Ändra DOM-läge endast när läget faktiskt växlar
+      if (shouldBeActive !== isActiveState) {
+        isActiveState = shouldBeActive;
+        applyScheduleState(shouldBeActive);
+      }
     }
 
-    updateClock();
-    setInterval(updateClock, 1000);
+    function applyScheduleState(active) {
+      const container = document.getElementById('presentation-container');
+      const iframe = document.getElementById('presentation-frame');
+      const clock = document.getElementById('clock-overlay');
 
-    // 2. Mjuk omläsning (Soft Refresh) var 15:e minut
-    // Laddar om iframen i bakgrunden så att ändringar i bildspelet syns utan avbrott
+      if (active) {
+        // Starta: ladda in presentationen och visa allt
+        iframe.src = PRESENTATION_URL;
+        container.style.display = 'block';
+        clock.style.display = 'block';
+      } else {
+        // Stäng av: töm iframen (sparar RAM/CPU/bandbredd) och släck skärmen
+        iframe.src = 'about:blank';
+        container.style.display = 'none';
+        if (HIDE_CLOCK_WHEN_INACTIVE) {
+          clock.style.display = 'none';
+        }
+      }
+    }
+
+    // Kör direkt vid sidladdning och sedan varje sekund
+    updateDisplayAndSchedule();
+    setInterval(updateDisplayAndSchedule, 1000);
+
+    // --- 2. Mjuk omläsning (var 15:e minut under öppettid) ---
+    // Uppdaterar presentationen i bakgrunden så att nya bilder syns
     const SLIDE_REFRESH_MINUTES = 15;
     setInterval(function() {
-      const iframe = document.getElementById('presentation-frame');
-      if (iframe) {
-        iframe.src = iframe.src;
+      if (isActiveState) {
+        const iframe = document.getElementById('presentation-frame');
+        if (iframe) {
+          iframe.src = PRESENTATION_URL;
+        }
       }
     }, SLIDE_REFRESH_MINUTES * 60 * 1000);
 
-    // 3. Hård omläsning en gång per dygn för att rensa webbläsarens minne
-    const FULL_RELOAD_HOURS = 24;
-    setTimeout(function() {
-      window.location.reload();
-    }, FULL_RELOAD_HOURS * 60 * 60 * 1000);
+    // --- 3. Nattlig rensning (varje natt kl. 03:00) ---
+    // Gör en full sidomladdning för att rensa Chromeboxens minne
+    setInterval(function() {
+      const now = new Date();
+      if (now.getHours() === 3 && now.getMinutes() === 0) {
+        window.location.reload();
+      }
+    }, 60 * 1000);
   </script>
 </body>
 </html>
