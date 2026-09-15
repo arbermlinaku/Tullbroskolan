@@ -53,15 +53,18 @@
     /* Gemensam stil och storlek för Klock- och Matsedelsrutan */
     #clock-overlay,
     #lunch-overlay {
-      width: 500px; /* Samma fasta bredd för båda */
+      width: 500px; /* Samma fasta bredd */
       box-sizing: border-box;
-      background: rgba(0, 0, 0, 0.78);
+      
+      /* Mer genomskinlig mörk bakgrund (50 % opacitet) */
+      background: rgba(0, 0, 0, 0.50);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-top: none; /* Sömlöst mot skärmens överkant */
       border-radius: 0 0 16px 16px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
       padding: 16px 22px;
       display: flex;
       flex-direction: column;
@@ -72,11 +75,11 @@
     #clock-content {
       display: flex;
       align-items: center;
-      gap: 22px; /* Luftigt mellanrum som fördelar innehållet */
+      gap: 22px;
       width: 100%;
     }
 
-    /* Förstorad analog klocka (SVG) */
+    /* Analog klocka (SVG) */
     #analog-clock {
       width: 104px;
       height: 104px;
@@ -87,7 +90,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      flex-grow: 1; /* Låter textgruppen fylla ut resten av rutan */
+      flex-grow: 1;
       overflow: hidden;
     }
 
@@ -99,17 +102,17 @@
       line-height: 1;
       letter-spacing: 0.04em;
       font-variant-numeric: tabular-nums;
-      text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 3px 6px rgba(0, 0, 0, 0.9);
     }
 
     /* Förstorat fullt datum */
     #clock-date {
-      color: #d1d5db;
+      color: #e5e7eb;
       font-size: 1.25rem;
       font-weight: 500;
       margin-top: 6px;
       white-space: nowrap;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
     }
 
     /* Typografi för Matsedeln */
@@ -120,6 +123,7 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       margin-bottom: 6px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     }
 
     #lunch-menu {
@@ -128,7 +132,7 @@
       font-weight: 600;
       line-height: 1.35;
       white-space: pre-line;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
     }
   </style>
 </head>
@@ -147,27 +151,23 @@
 
   <!-- Överliggande element: Klockor + Matsedel -->
   <div id="overlay-wrapper">
-    <!-- Klockruta: Analog + Digital + Fullt datum -->
+    <!-- Klockruta -->
     <div id="clock-overlay">
       <div id="clock-content">
-        <!-- Vektorbaserad analog klocka -->
         <svg id="analog-clock" viewBox="0 0 100 100">
-          <!-- Urtavla -->
-          <circle cx="50" cy="50" r="46" stroke="rgba(255, 255, 255, 0.25)" stroke-width="3" fill="rgba(0, 0, 0, 0.45)" />
+          <!-- Urtavla med mjuk transparens -->
+          <circle cx="50" cy="50" r="46" stroke="rgba(255, 255, 255, 0.25)" stroke-width="3" fill="rgba(0, 0, 0, 0.30)" />
           
-          <!-- Timmarkeringar vid 12, 3, 6 och 9 -->
-          <line x1="50" y1="8" x2="50" y2="15" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
-          <line x1="92" y1="50" x2="85" y2="50" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
-          <line x1="50" y1="92" x2="50" y2="85" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
-          <line x1="8" y1="50" x2="15" y2="50" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Timmarkeringar -->
+          <line x1="50" y1="8" x2="50" y2="15" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="92" y1="50" x2="85" y2="50" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="50" y1="92" x2="50" y2="85" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="8" y1="50" x2="15" y2="50" stroke="rgba(255, 255, 255, 0.85)" stroke-width="2.5" stroke-linecap="round" />
           
-          <!-- Timvisare -->
+          <!-- Visare -->
           <line id="hour-hand" x1="50" y1="50" x2="50" y2="27" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
-          <!-- Minutvisare -->
-          <line id="min-hand" x1="50" y1="50" x2="50" y2="17" stroke="#d1d5db" stroke-width="3" stroke-linecap="round" />
-          <!-- Sekundvisare -->
+          <line id="min-hand" x1="50" y1="50" x2="50" y2="17" stroke="#e5e7eb" stroke-width="3" stroke-linecap="round" />
           <line id="sec-hand" x1="50" y1="50" x2="50" y2="13" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" />
-          <!-- Centrumpunkt -->
           <circle cx="50" cy="50" r="3.5" fill="#fbbf24" />
         </svg>
 
@@ -200,16 +200,16 @@
 
     let isActiveState = null;
 
-    // --- 1. Klockor, Fullt Datum och Schemaläggning ---
+    // --- 1. Klockor, Fullt Datum och Schema ---
     function updateDisplayAndSchedule() {
       const now = new Date();
       
-      // 1a. Digital tid
+      // Digital tid
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       document.getElementById('clock-time').textContent = `${hours}:${minutes}`;
 
-      // 1b. Fullt datum med stor begynnelsebokstav (Ex: "Tisdag den 15 September")
+      // Fullt datum med stor begynnelsebokstav
       const weekday = now.toLocaleDateString('sv-SE', { weekday: 'long' });
       const month = now.toLocaleDateString('sv-SE', { month: 'long' });
       const day = now.getDate();
@@ -218,7 +218,7 @@
       const capMonth = month.charAt(0).toUpperCase() + month.slice(1);
       document.getElementById('clock-date').textContent = `${capWeekday} den ${day} ${capMonth}`;
 
-      // 1c. Analog klocka (rotationsvinklar)
+      // Analog klocka (rotationsvinklar)
       const sec = now.getSeconds();
       const min = now.getMinutes();
       const hr = now.getHours();
@@ -231,7 +231,7 @@
       document.getElementById('min-hand').setAttribute('transform', `rotate(${minAngle} 50 50)`);
       document.getElementById('hour-hand').setAttribute('transform', `rotate(${hrAngle} 50 50)`);
 
-      // 1d. Schema (07:30 - 17:00, vardagar)
+      // Schemaläggning (07:30 - 17:00, vardagar)
       const currentMinuteOfDay = now.getHours() * 60 + now.getMinutes();
       const startMinute = START_HOUR * 60 + START_MINUTE;
       const endMinute = END_HOUR * 60 + END_MINUTE;
@@ -269,7 +269,6 @@
       }
     }
 
-    // Kör direkt och uppdatera sedan varje sekund
     updateDisplayAndSchedule();
     setInterval(updateDisplayAndSchedule, 1000);
 
