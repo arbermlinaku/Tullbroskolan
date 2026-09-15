@@ -53,7 +53,7 @@
     /* Gemensam stil och storlek för Klock- och Matsedelsrutan */
     #clock-overlay,
     #lunch-overlay {
-      width: 500px; /* Båda rutorna har exakt samma fasta bredd */
+      width: 500px; /* Samma fasta bredd för båda */
       box-sizing: border-box;
       background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(10px);
@@ -72,13 +72,14 @@
     #clock-content {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 22px; /* Luftigt mellanrum som fördelar innehållet */
+      width: 100%;
     }
 
-    /* Analog klocka (SVG) */
+    /* Förstorad analog klocka (SVG) */
     #analog-clock {
-      width: 88px;
-      height: 88px;
+      width: 104px;
+      height: 104px;
       flex-shrink: 0;
     }
 
@@ -86,13 +87,14 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      flex-grow: 1; /* Låter textgruppen fylla ut resten av rutan */
       overflow: hidden;
     }
 
-    /* Digital klocka */
+    /* Förstorad digital klocka */
     #clock-time {
       color: #ffffff;
-      font-size: 3.4rem;
+      font-size: 3.9rem;
       font-weight: 700;
       line-height: 1;
       letter-spacing: 0.04em;
@@ -100,10 +102,10 @@
       text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
     }
 
-    /* Fullt datum */
+    /* Förstorat fullt datum */
     #clock-date {
       color: #d1d5db;
-      font-size: 1.15rem;
+      font-size: 1.25rem;
       font-weight: 500;
       margin-top: 6px;
       white-space: nowrap;
