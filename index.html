@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Infoskärm - Tullbroskolan</title>
   <style>
-    /* Nollställ marginaler och fyll hela vyporten */
+    /* Nollställ marginaler och fyll skärmen */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -20,7 +20,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
-    /* Presentationslager */
+    /* Presentationslager i botten */
     #presentation-container {
       position: absolute;
       top: 0;
@@ -37,27 +37,34 @@
       display: block;
     }
 
-    /* Klockans bakgrundsruta - uppskalad för att rymma den större texten */
-    #clock-overlay {
+    /* Gemensam behållare för klocka och matsedel i övre vänstra hörnet */
+    #overlay-wrapper {
       position: fixed;
       top: 30px;
       left: 30px;
       z-index: 10;
-      
-      background: rgba(0, 0, 0, 0.70);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      
-      padding: 18px 32px;
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-      
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
       pointer-events: none;
       user-select: none;
     }
 
-    /* Klockans siffror - dubbel storlek (4.4rem) */
+    /* Rutan för Klockan */
+    #clock-overlay {
+      background: rgba(0, 0, 0, 0.70);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 18px 32px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      white-space: nowrap;
+    }
+
     #clock-time {
       color: #ffffff;
       font-size: 4.4rem;
@@ -68,13 +75,46 @@
       text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
     }
 
-    /* Datumtext - dubbel storlek (1.7rem) */
     #clock-date {
       color: #d1d5db;
       font-size: 1.7rem;
       font-weight: 500;
       margin-top: 8px;
       text-transform: capitalize;
+    }
+
+    /* Rutan för Dagens Matsedel */
+    #lunch-overlay {
+      background: rgba(0, 0, 0, 0.70);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 18px 28px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+      max-width: 600px;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    #lunch-header {
+      color: #fbbf24; /* Varm gul/guld accentfärg */
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    #lunch-menu {
+      color: #ffffff;
+      font-size: 1.35rem;
+      font-weight: 600;
+      line-height: 1.35;
+      white-space: pre-line;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     }
   </style>
 </head>
@@ -91,26 +131,36 @@
     </iframe>
   </div>
 
-  <!-- Förstorad klocka i övre vänstra hörnet -->
-  <div id="clock-overlay">
-    <div id="clock-time">00:00</div>
-    <div id="clock-date">Laddar...</div>
+  <!-- Överliggande element: Klocka + Matsedel sida vid sida -->
+  <div id="overlay-wrapper">
+    <!-- Stor Klocka -->
+    <div id="clock-overlay">
+      <div id="clock-time">00:00</div>
+      <div id="clock-date">Laddar...</div>
+    </div>
+
+    <!-- Dagens Lunch -->
+    <div id="lunch-overlay">
+      <div id="lunch-header">🍽️ DAGENS LUNCH</div>
+      <div id="lunch-menu">Hämtar matsedel...</div>
+    </div>
   </div>
 
   <script>
-    // URL med /embed för att tillåta inbäddning
+    // --- Konfiguration ---
     const PRESENTATION_URL = "https://docs.google.com/presentation/d/e/2PACX-1vQdvm58L1ldwHdythef5TPKYRNPeGoVJYmxC7llHReMvCeVLJmqSaUtC2EF6hZX3Pk5rIuedMOpyuoc/embed?start=true&loop=true&delayms=5000&rm=minimal";
+    const RSS_MENU_URL = "https://www.skolmat.info/api/public/matsedlar/C3EC1DB9-EE3A-4BD4-B7F5-D0793C570944/rss?limit=7";
 
     const START_HOUR = 7;
     const START_MINUTE = 30;
     const END_HOUR = 17;
     const END_MINUTE = 0;
     const WEEKDAYS_ONLY = true;
-    const HIDE_CLOCK_WHEN_INACTIVE = true;
+    const HIDE_WHEN_INACTIVE = true;
 
     let isActiveState = null;
 
-    // 1. Uppdatera klocka, datum och schema
+    // --- 1. Tid, Datum och Schemaläggare ---
     function updateDisplayAndSchedule() {
       const now = new Date();
       
@@ -143,17 +193,17 @@
     function applyScheduleState(active) {
       const container = document.getElementById('presentation-container');
       const iframe = document.getElementById('presentation-frame');
-      const clock = document.getElementById('clock-overlay');
+      const overlay = document.getElementById('overlay-wrapper');
 
       if (active) {
         iframe.src = PRESENTATION_URL;
         container.style.display = 'block';
-        clock.style.display = 'block';
+        overlay.style.display = 'flex';
       } else {
         iframe.src = 'about:blank';
         container.style.display = 'none';
-        if (HIDE_CLOCK_WHEN_INACTIVE) {
-          clock.style.display = 'none';
+        if (HIDE_WHEN_INACTIVE) {
+          overlay.style.display = 'none';
         }
       }
     }
@@ -161,7 +211,122 @@
     updateDisplayAndSchedule();
     setInterval(updateDisplayAndSchedule, 1000);
 
-    // 2. Mjuk omläsning var 15:e minut under drift
+    // --- 2. Hämtning och tolkning av Matsedel (RSS) ---
+    async function fetchMenuData() {
+      // 1. Prova direktanrop
+      try {
+        const res = await fetch(RSS_MENU_URL);
+        if (res.ok) {
+          const xml = await res.text();
+          return parseXmlFeed(xml);
+        }
+      } catch (e) {}
+
+      // 2. Fallback via rss2json för att undvika webbläsarens CORS-spärr
+      try {
+        const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(RSS_MENU_URL)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'ok' && json.items) {
+            return json.items.map(item => ({
+              title: item.title,
+              description: item.description,
+              pubDate: item.pubDate
+            }));
+          }
+        }
+      } catch (e) {}
+
+      // 3. Fallback via allorigins
+      try {
+        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(RSS_MENU_URL)}`);
+        if (res.ok) {
+          const xml = await res.text();
+          return parseXmlFeed(xml);
+        }
+      } catch (e) {}
+
+      return null;
+    }
+
+    function parseXmlFeed(xmlText) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlText, 'text/xml');
+      const items = xml.querySelectorAll('item');
+      const result = [];
+      items.forEach(item => {
+        result.push({
+          title: item.querySelector('title') ? item.querySelector('title').textContent : '',
+          description: item.querySelector('description') ? item.querySelector('description').textContent : '',
+          pubDate: item.querySelector('pubDate') ? item.querySelector('pubDate').textContent : ''
+        });
+      });
+      return result;
+    }
+
+    function findTodayItem(items) {
+      if (!items || items.length === 0) return null;
+
+      const now = new Date();
+      const todayName = now.toLocaleDateString('sv-SE', { weekday: 'long' }).toLowerCase();
+      const todayISO = now.toISOString().slice(0, 10);
+      const dayNum = now.getDate();
+      const monthNum = now.getMonth() + 1;
+
+      // 1. Sök efter dagens namn (t.ex. "måndag") i titeln
+      let match = items.find(i => (i.title || '').toLowerCase().includes(todayName));
+      if (match) return match;
+
+      // 2. Sök efter datum i titeln eller pubDate
+      match = items.find(i => {
+        const str = `${i.title || ''} ${i.pubDate || ''}`;
+        return str.includes(todayISO) || str.includes(`${dayNum}/${monthNum}`);
+      });
+      if (match) return match;
+
+      // 3. Indexmatchning för vardagar (mån=1 t.o.m fre=5)
+      const dayIndex = now.getDay();
+      if (dayIndex >= 1 && dayIndex <= 5 && items[dayIndex - 1]) {
+        return items[dayIndex - 1];
+      }
+
+      return items[0];
+    }
+
+    function cleanText(raw) {
+      if (!raw) return "";
+      return raw
+        .replace(/<br\s*[\/]?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .trim();
+    }
+
+    async function updateLunchMenu() {
+      const menuEl = document.getElementById('lunch-menu');
+      const items = await fetchMenuData();
+
+      if (!items) {
+        menuEl.textContent = "Kunde inte läsa in matsedeln just nu.";
+        return;
+      }
+
+      const todayItem = findTodayItem(items);
+      if (todayItem) {
+        const desc = cleanText(todayItem.description);
+        const title = cleanText(todayItem.title);
+        // Visa beskrivningen om den finns, annars titeln
+        menuEl.textContent = desc || title || "Ingen meny angiven för idag.";
+      } else {
+        menuEl.textContent = "Ingen matsedel tillgänglig.";
+      }
+    }
+
+    // Hämta matsedel vid start och uppdatera var 30:e minut
+    updateLunchMenu();
+    setInterval(updateLunchMenu, 30 * 60 * 1000);
+
+    // --- 3. Mjuk omläsning av presentationen (var 15:e minut) ---
     const SLIDE_REFRESH_MINUTES = 15;
     setInterval(function() {
       if (isActiveState) {
@@ -172,7 +337,7 @@
       }
     }, SLIDE_REFRESH_MINUTES * 60 * 1000);
 
-    // 3. Full minnesrensning kl. 03:00 på natten
+    // --- 4. Hård minnesrensning kl 03:00 på natten ---
     setInterval(function() {
       const now = new Date();
       if (now.getHours() === 3 && now.getMinutes() === 0) {
