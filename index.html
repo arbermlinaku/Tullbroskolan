@@ -37,41 +37,62 @@
       display: block;
     }
 
-    /* Gemensam behållare - Längst upp i skärmen */
+    /* Gemensam behållare längst upp */
     #overlay-wrapper {
       position: fixed;
       top: 0;
       left: 24px;
       z-index: 10;
       display: flex;
-      align-items: stretch; /* Gör båda rutorna exakt lika höga */
+      align-items: stretch; /* Gör båda rutorna lika höga */
       gap: 16px;
       pointer-events: none;
       user-select: none;
     }
 
-    /* Gemensam stil och storlek för Klockan och Matsedeln */
+    /* Gemensam stil och storlek för Klock- och Matsedelsrutan */
     #clock-overlay,
     #lunch-overlay {
-      width: 440px; /* Båda rutorna har exakt samma bredd */
+      width: 500px; /* Båda rutorna har exakt samma fasta bredd */
       box-sizing: border-box;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0, 0, 0, 0.78);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      border-top: none; /* Sömlös anslutning mot skärmens överkant */
+      border-top: none; /* Sömlöst mot skärmens överkant */
       border-radius: 0 0 16px 16px;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-      padding: 16px 24px;
+      padding: 16px 22px;
       display: flex;
       flex-direction: column;
       justify-content: center;
     }
 
-    /* Typografi för Klockan */
+    /* Layout inuti klockrutan: analog klocka till vänster, text till höger */
+    #clock-content {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    /* Analog klocka (SVG) */
+    #analog-clock {
+      width: 88px;
+      height: 88px;
+      flex-shrink: 0;
+    }
+
+    #clock-text-group {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Digital klocka */
     #clock-time {
       color: #ffffff;
-      font-size: 3.8rem;
+      font-size: 3.4rem;
       font-weight: 700;
       line-height: 1;
       letter-spacing: 0.04em;
@@ -79,12 +100,14 @@
       text-shadow: 0 3px 6px rgba(0, 0, 0, 0.8);
     }
 
+    /* Fullt datum */
     #clock-date {
       color: #d1d5db;
-      font-size: 1.4rem;
+      font-size: 1.15rem;
       font-weight: 500;
       margin-top: 6px;
-      text-transform: capitalize;
+      white-space: nowrap;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     }
 
     /* Typografi för Matsedeln */
@@ -99,7 +122,7 @@
 
     #lunch-menu {
       color: #ffffff;
-      font-size: 1.25rem;
+      font-size: 1.22rem;
       font-weight: 600;
       line-height: 1.35;
       white-space: pre-line;
@@ -120,12 +143,38 @@
     </iframe>
   </div>
 
-  <!-- Överliggande element: Klocka + Matsedel (Lika stora, längst upp) -->
+  <!-- Överliggande element: Klockor + Matsedel -->
   <div id="overlay-wrapper">
-    <!-- Klocka -->
+    <!-- Klockruta: Analog + Digital + Fullt datum -->
     <div id="clock-overlay">
-      <div id="clock-time">00:00</div>
-      <div id="clock-date">Laddar...</div>
+      <div id="clock-content">
+        <!-- Vektorbaserad analog klocka -->
+        <svg id="analog-clock" viewBox="0 0 100 100">
+          <!-- Urtavla -->
+          <circle cx="50" cy="50" r="46" stroke="rgba(255, 255, 255, 0.25)" stroke-width="3" fill="rgba(0, 0, 0, 0.45)" />
+          
+          <!-- Timmarkeringar vid 12, 3, 6 och 9 -->
+          <line x1="50" y1="8" x2="50" y2="15" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="92" y1="50" x2="85" y2="50" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="50" y1="92" x2="50" y2="85" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="8" y1="50" x2="15" y2="50" stroke="rgba(255, 255, 255, 0.8)" stroke-width="2.5" stroke-linecap="round" />
+          
+          <!-- Timvisare -->
+          <line id="hour-hand" x1="50" y1="50" x2="50" y2="27" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" />
+          <!-- Minutvisare -->
+          <line id="min-hand" x1="50" y1="50" x2="50" y2="17" stroke="#d1d5db" stroke-width="3" stroke-linecap="round" />
+          <!-- Sekundvisare -->
+          <line id="sec-hand" x1="50" y1="50" x2="50" y2="13" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" />
+          <!-- Centrumpunkt -->
+          <circle cx="50" cy="50" r="3.5" fill="#fbbf24" />
+        </svg>
+
+        <!-- Digital tid och fullt datum -->
+        <div id="clock-text-group">
+          <div id="clock-time">00:00</div>
+          <div id="clock-date">Laddar datum...</div>
+        </div>
+      </div>
     </div>
 
     <!-- Dagens Lunch -->
@@ -149,17 +198,38 @@
 
     let isActiveState = null;
 
-    // --- 1. Tid, Datum och Schemaläggning ---
+    // --- 1. Klockor, Fullt Datum och Schemaläggning ---
     function updateDisplayAndSchedule() {
       const now = new Date();
       
+      // 1a. Digital tid
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       document.getElementById('clock-time').textContent = `${hours}:${minutes}`;
 
-      const options = { weekday: 'short', day: 'numeric', month: 'short' };
-      document.getElementById('clock-date').textContent = now.toLocaleDateString('sv-SE', options);
+      // 1b. Fullt datum med stor begynnelsebokstav (Ex: "Tisdag den 15 September")
+      const weekday = now.toLocaleDateString('sv-SE', { weekday: 'long' });
+      const month = now.toLocaleDateString('sv-SE', { month: 'long' });
+      const day = now.getDate();
 
+      const capWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+      const capMonth = month.charAt(0).toUpperCase() + month.slice(1);
+      document.getElementById('clock-date').textContent = `${capWeekday} den ${day} ${capMonth}`;
+
+      // 1c. Analog klocka (rotationsvinklar)
+      const sec = now.getSeconds();
+      const min = now.getMinutes();
+      const hr = now.getHours();
+
+      const secAngle = sec * 6;
+      const minAngle = (min + sec / 60) * 6;
+      const hrAngle = ((hr % 12) + min / 60) * 30;
+
+      document.getElementById('sec-hand').setAttribute('transform', `rotate(${secAngle} 50 50)`);
+      document.getElementById('min-hand').setAttribute('transform', `rotate(${minAngle} 50 50)`);
+      document.getElementById('hour-hand').setAttribute('transform', `rotate(${hrAngle} 50 50)`);
+
+      // 1d. Schema (07:30 - 17:00, vardagar)
       const currentMinuteOfDay = now.getHours() * 60 + now.getMinutes();
       const startMinute = START_HOUR * 60 + START_MINUTE;
       const endMinute = END_HOUR * 60 + END_MINUTE;
@@ -167,8 +237,8 @@
       let shouldBeActive = currentMinuteOfDay >= startMinute && currentMinuteOfDay < endMinute;
 
       if (WEEKDAYS_ONLY) {
-        const day = now.getDay();
-        if (day === 0 || day === 6) {
+        const dayOfWeek = now.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
           shouldBeActive = false;
         }
       }
@@ -197,6 +267,7 @@
       }
     }
 
+    // Kör direkt och uppdatera sedan varje sekund
     updateDisplayAndSchedule();
     setInterval(updateDisplayAndSchedule, 1000);
 
@@ -276,22 +347,16 @@
       return items[0];
     }
 
-    /**
-     * Rensar HTML och avkodar entiteter som &amp; till &
-     */
     function cleanText(raw) {
       if (!raw) return "";
 
-      // Ersätt HTML-brytningar med nya rader
       let text = raw
         .replace(/<br\s*[\/]?>/gi, '\n')
         .replace(/<\/p>/gi, '\n');
 
-      // Avkoda HTML-entiteter via DOM-tolk
       const doc = new DOMParser().parseFromString(text, 'text/html');
       let decoded = doc.body.textContent || "";
 
-      // Säkerhetsersättning för eventuellt dubbelkodade tecken
       decoded = decoded
         .replace(/&amp;/g, '&')
         .replace(/&quot;/g, '"')
@@ -336,7 +401,7 @@
       }
     }, SLIDE_REFRESH_MINUTES * 60 * 1000);
 
-    // --- 4. Hård minnesrensning kl 03:00 på natten ---
+    // --- 4. Hård minnesrensning kl. 03:00 på natten ---
     setInterval(function() {
       const now = new Date();
       if (now.getHours() === 3 && now.getMinutes() === 0) {
